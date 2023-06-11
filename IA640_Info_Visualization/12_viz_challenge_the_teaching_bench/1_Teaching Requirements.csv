@@ -1,0 +1,72 @@
+Area,Num,Title,When,Odd_F,Even_S,Even_F,Odd-S,Summer,Type
+MA,120,Introduction to STEM Mathematics,Fall Semesters,1,,1,,,Special
+MA,131,Calculus I,Every Semester,6,1,6,1,1,Core
+MA,131,Calc I - Experimental (COMPASS),,1,,1,,,Special
+MA,132,Calculus II,Every Semester,3,6,3,6,1,Core
+MA,132,Calc II - COMPASS,,,1,,1,,Special
+MA,180,Introductory College Mathematics,Fall Terms,2,1,2,1,,Core
+MA,181,Basic Calculus,Spring Terms,1,2,1,2,,Core
+MA,200,Introduction to Mathematical Modeling and Software,Spring Semesters,1,1,1,1,,Major
+MA,211,Discrete Mathematics and Proof,Every Term,2,2,2,2,,Major
+MA,230,3-D Space and Projective Geometry,Spring Terms,,1,,1,,Serv
+MA,231,Calculus III,Every Semester,3,3,3,3,1,Core
+MA,232,Elementary Differential Equations,Every Semester,3,3,3,3,1,Core
+MA,239,Elementary Linear Algebra,Even Spring Terms,,1,,,,Serv
+MA,277,Elementary Numerical Methods,Even Fall Terms,,,1,,,Serv
+MA,300,Seminar in Actuarial Mathematics,Given When Needed,,,,,,
+MA,311,Abstract Algebra,Odd Fall Semesters,1,,,,,Major
+MA,313,Abstract Linear Algebra,Even Fall Semesters,,,1,,,XL
+MA,314,Number Theory and Its Applications,Odd Spring Semesters,,,,1,,Major
+MA,321,Advanced Calculus I,Fall Semesters,1,,1,,,Major
+MA,322,Advanced Calculus II,Even Spring Semesters,,1,,,,Major
+MA,330,Advanced Engineering Mathematics,Fall and Spring Terms,2,1,2,1,,Serv
+MA,331,Fourier Series and Boundary Value Problems,Spring Semesters,,1,,1,,Serv
+MA,332,Intermediate Differential Equations,Even Spring Semesters,,1,,,,Major
+MA,339,Applied Linear Algebra,Every Semester,1,1,1,1,1,Serv
+MA,345,Automata Theory and Formal Languages,Fall Terms,,,,,,Crosslisted to CS and taught by CS
+MA,362,Complex Analysis with Applications,Odd Spring Semesters,,,,1,,XL
+MA,363,Mathematical Modeling,Spring Semesters,,1,,1,,Major
+MA,377,Numerical Methods,Fall Semesters,1,,1,,,Major
+MA,381,Probability,Fall Terms,1,,1,,,Major
+MA,382,Mathematical Statistics,Odd Spring Semesters,,,,1,,Major
+MA,442,Computational Complexity,Given When Needed,,,,,,Crosslisted to CS and taught by CS
+MA,447,Computer Algorithms,Fall Terms,,,,,,Crosslisted to CS and taught by CS
+MA,449,Computational Learning,Given When Needed,,,,,,Crosslisted to CS and taught by CS
+MA,451,Introduction to Mathematical Research,Spring Terms,,0.5,,0.5,,Major
+MA,453,Introduction to Mathematical Instruction,Spring Terms,,0.5,,0.5,,Major
+MA,456,Cryptography,Spring Terms,,,,,,Crosslisted to CS and taught by CS
+MA,469,Quantum Information and Computation,Given When Needed,,,,,,Crosslisted to CS and taught by CS
+MA,511,Algebraic Structures,Given When Needed,,,,,,Grad
+MA,513,Abstract Linear Algebra,,,,0,,,XL
+MA,514,Sets and Topology,Given When Needed,,1,,,,Grad
+MA,521,Classical Complex Analysis,Given When Needed,,1,,,,Grad
+MA,522,Classical Real Analysis,Given When Needed,1,,1,,,Grad
+MA,525,Functional Analysis,Given When Needed,,,,1,,Grad
+MA,526,Convex Optimization and Analysis,Given When Needed,1,,,,,Grad
+MA,531,Initial and Boundary Value Problems and Partial Differential Equations,Given When Needed,,,1,,,Grad
+MA,533,Ordinary Differential Equations,,1,,,,,Grad
+MA,550,Nonlinear Partial Differential Equations,Given When Needed,,1,,,,Grad
+MA,562,Complex Analysis with Applications,Given When Needed,,,,0,,XL
+MA,563,Applied Dynamical Systems,Given When Needed,,1,,,,Grad
+MA,571,Numerical Solution of Differential Equations,Given When Needed,,,,1,,Grad
+MA,572,Finite-Element Methods,Fall Semesters,,,1,,,Grad
+MA,573,Matrix Theory and Computations,Given When Needed,1,,,,,Grad
+MA,578,Numerical Analysis,Given When Needed,,,1,,,Grad
+MA,579,Introduction to Applied Optimization,Given When Needed,,,,1,,Grad
+MA,581,Probability,Fall Terms,0,,0,,,XL
+MA,582,Mathematical Statistics I,Odd Spring Semesters,,,,0,,XL
+DS,241,Introduction to Data Science,Fall Terms,1,,1,,,Major
+DS,392,Ethics in Data Science and Applied Mathematics,Spring Terms,,1,,1,,Major
+STAT,282,General Statistics,Every Term,1,1,1,1,,Core
+STAT,318,Biostatistics,Spring Semesters,,2,,2,,Core
+STAT,381,Probability,Fall Terms,1,,1,,,XL
+STAT,382,Mathematical Statistics,Odd Spring Semesters,,,,1,,XL
+STAT,383,Probability and Statistics,Every Term,2,3,2,3,,Core
+STAT,384,Advanced Applied Statistics,Even Spring Terms,,1,,,,XL
+STAT,385,Bayesian Data Analysis,Given When Needed,1,,,,,Major
+STAT,389,Probability and Statistics with Multivariate Analysis,Fall Terms,1,,1,,,Serv
+STAT,581,Probability,Fall Terms,0,,0,,,XL
+STAT,582,Mathematical Statistics I,Odd Spring Semesters,,,,0,,XL
+STAT,584,Advanced Applied Statistics,Even Spring Semesters,,0,,,,XL
+STAT,585,Bayesian Data Analysis,,,,,1,,Grad
+Total,,,,41,41,41,41,5,

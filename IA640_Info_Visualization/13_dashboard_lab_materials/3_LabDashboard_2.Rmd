@@ -1,0 +1,89 @@
+---
+title: "Philadelphia Complaints Against Police (Sep 2019 report)"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    theme: lumen
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+
+```
+
+```{r packages, include=FALSE}
+library(knitr) # to create nice documents in R
+library(tidyverse) # loads ggplot2, dplyr,tidyr,readr,purr,tibble
+library(forcats) # working with categorical variables
+library(lubridate)
+library(janitor)
+library(dygraphs) #interactive plot for time series
+library(tsbox) # create time series data
+library(plotly) # interactive plot from ggplot
+```
+
+
+```{r data, include=FALSE}
+df1=read_csv("ppd_complaints.csv")
+df2=read_csv("ppd_complainant_demographics.csv")
+df3=read_csv("ppd_complaint_disciplines.csv")
+```
+
+
+Column {data-width=250}
+-----------------------------------------------------------------------
+
+### September complaints by district
+
+```{r}
+df1 %>% 
+  filter(date_received>"2019-09-01") %>%
+  count(district_occurrence,sort=TRUE) %>%
+  DT::datatable(colnames = c("District","Complaints"),rownames = F,
+                options = list(bPaginate = FALSE))
+```
+
+### Complaints by classification
+
+```{r}
+# create the plot
+p1=df1 %>% filter(date_received >= "2019-09-01") %>%
+ggplot(aes(x=date_received,text = paste('Date: ', as.Date(date_received)))) + 
+         geom_bar(aes(fill=general_cap_classification)) + 
+  labs(fill="Classsification of complaint")+
+  scale_x_date() + coord_flip()+
+  theme_minimal() 
+  
+ggplotly(p1,tooltip = c("y","text"))
+```
+
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Weekly complaint count
+
+```{r}
+dfA=df1 %>% group_by(week_reps=floor_date(date_received, "week")) %>%  summarise(reports=n()) 
+dfA  %>% ts_xts() %>% 
+  dygraph(ylab="Number of complaints filed") %>% dyRangeSelector() %>% 
+  dyOptions(stepPlot = TRUE)
+```
+
+### Disciplinary findings 
+
+
+```{r}
+left_join(df3,df1,by="complaint_id") %>% 
+  filter(disciplinary_findings != "Not Applicable") %>%
+  ggplot(aes(x=disciplinary_findings)) + 
+  geom_bar(aes(fill=disciplinary_findings)) +
+  facet_wrap(~year(date_received),ncol = 5)+
+  theme_minimal()+
+  theme(axis.text.x=element_blank()) # get rid of the text labels on the x axis
+
+  
+```
+
+> (Historical breakdown for cases sustained by investigation)

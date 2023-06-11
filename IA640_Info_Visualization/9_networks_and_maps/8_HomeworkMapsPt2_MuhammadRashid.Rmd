@@ -1,0 +1,314 @@
+---
+title: "Pt 2 - Homework on Maps in R"
+author: "Muhammad Rashid"
+date: "15 Nov, 2022"
+output:
+  html_document:
+    toc: yes
+    toc_depth: '3'
+    df_print: paged
+  html_notebook:
+    toc: yes
+    toc_depth: 3
+    theme: spacelab
+    highlight: tango
+    toc_float: yes
+    collapsed: no
+subtitle: Focus on tmap and leaflets
+---
+# Pedagogy Preliminaries
+
+##### Citation
+
+This material is based on a document created by Claudia Engle, available at https://cengel.github.io/rspatial/4_Mapping.nb.html .
+
+#### Additional Reference
+
+Lovelace, Nowosad, and Muenchow have a nice open source book on *Geocomputation in R*.  https://geocompr.robinlovelace.net/
+
+It covers much more that just visualization, but Chapter 8 covers a bit about making maps. https://geocompr.robinlovelace.net/adv-map.html
+
+
+#### To complete this assignment, follow these steps:
+
+1. Download the `HomeworkMapsPt2.nb.html` file from Moodle
+
+2. From the notebook file, , create the associated .Rmd file and open in RStudio.
+
+3. Replace the "Your Name Here" text in the `author:` field with your own name.
+
+4. Supply your solutions to the homework by editing `HomeworkMapsPt2.Rmd`.
+
+5. When you have completed the homework and have **checked** that your code both runs in the Console and knits correctly when you click `Knit HTML`, rename the R Markdown file to `HomeworkMapsPt2_YourNameHere.Rmd`, and submit both the `.Rmd` file and the `.html` output file on Blackboard.  (YourNameHere should be changed to your own name.)
+
+##### Homework tips:
+
+1. Recall the following useful RStudio hotkeys.
+
+Keystroke | Description
+------------|-------------------------------------------
+`<tab>` | Autocompletes commands and filenames, and lists arguments for functions.
+`<up>` | Cycles through previous commands in the console prompt
+`<ctrl-up>` | Lists history of previous commands matching an unfinished one
+`<ctrl-enter>` | Runs current line from source window to Console. Good for trying things out ideas from a source file.
+`<ESC>` | Aborts an unfinished command and get out of the + prompt
+
+**Note**: Shown above are the Windows/Linux keys.  For Mac OS X, the `<ctrl>` key should be substituted with the `<command>` (&#8984;) key.
+
+2. Instead of sending code line-by-line with `<ctrl-enter>`, you can send entire code chunks, and even run all of the code chunks in your .Rmd file. Look under the <Chunks> menu of the Source panel.
+
+3. Run your code in the Console and Knit HTML frequently to check for errors.
+
+4. You may find it easier to solve a problem by interacting only with the Console at first, or by creating a separate `.R` source file that contains only R code and no Markdown.
+
+# Making Maps (continued)
+
+As this is a new day, and a new file, we still have some preliminary setup that is required.
+
+### Hot flash news - new version of ggplot2 is available
+
+So ... yesterday  **ggplot2 version 3.0** becamee available, which includes the `geom_sf` support.  It also incorporates `viridis` as its default colormap for ordered variables.  
+
+You should update that package from inside of Rstudio.  
+
+I tried to see if ggmap had incorporated a fix, and it had not, but ... I won't be using that stuff today.  On the other hand, I generally load ggplot2 out of habit when I am working in R.
+
+### Packages
+
+We will give preference to the "tidyverse" of packages related to "Tidy Data."    
+
+Pt 1 loaded several spatial packages.  For this part, I am commenting out several of those package loads so that you better understand the particular dependencies.
+
+```{r setup,collapse=TRUE}
+## additional libraries needed for R code examples
+
+#library(sp)
+library(sf)
+#library(rgdal)
+#library(classInt) 
+library(RColorBrewer) # not a strictly a spatial ligrary
+library(viridis) #my current "go to" color scales
+#library(ggmap)
+library(leaflet)
+library(tmap)
+#library(GISTools)
+```
+
+Some general tools that I *almost always* load:
+
+```{r collapse=TRUE}
+library(knitr) # to create nice documents in R
+library(tidyverse) # loads ggplot2, dplyr,tidyr,readr,purr,tibble
+library(broom)  # because I find it useful
+library(forcats) # working with categorical variables
+```
+
+
+## Data needed:
+
+We will continue to play using the Philly data, so that we maintain a sense of continuity.
+
+* Shapefile of Philadelphia census tracts and homicide rates: [Philly3.zip](https://www.dropbox.com/s/pw4611p7x3h5sqa/Philly3.zip?dl=1) .  Inside of the zip file is a directory called `Philly3`.  
+
+__Make sure that you place an unzipped copy of that directory as a subdirectory in your working directory.__
+
+For this lecture we, we will focus ourselves entirely on the newer, `sf` objects, so I won't even load the older format.
+
+Recall the meaning of the "added" variables:
+
+* _N_HOMIC_: Number of homicides (since 2006)
+* _HOMIC_R_: homicide rate per 100,000 (Philadelphia Open Data)
+* _PCT_COL_: % 25 years and older with college or higher degree[^1] (ACS 2006-2010)
+* _mdHHnc_: estimated median household income (ACS 2006-2010)
+
+
+```{r message = F}
+philly_sf <-  st_read("Philly3/Philly3.shp")
+plot(philly_sf)
+```
+
+> `sf` is an important package for data manipulation and integration with other programs (hence - conformance to formal ISO standards).  If you are thinking that you need to manipulate the underlying data (or ask geographic questions), it is probably the tool.  The other packages we are using focus on *visualization*.
+
+##### **(a)** Of what class is `philly_sf`? 
+
+- **'philly_sf' is a data frame or table (data.frame) with feature attributes and feature geometries that has a list of columns with the geometries for each feature (record) and is made up of the feature geometry of a single simple feature.**
+
+## 2. Mapping with `tmap`
+
+The `tmap` was specifically designed for making thematic maps, where the focus is on geospatial map as a context to understanding some other data (such as we might be doing with this homicide data)  It borrows from the ggplot syntax (grammar of graphics) and is specifically designed to make creation of thematic maps more convenient. It takes care of a lot of the styling and aesthetics. This reduces our amount of code significantly. We only need: 
+
+- `tm_shape()` and provide the `sf` object as argument directly. This is followed by
+- `+`, and 
+- `tm_polygons` where we set
+    - the attribute variable to map, 
+    - the break style, and 
+    - the title.
+    
+> *tmap* does not require an `sf` object, but it can certainly use them.
+
+Check the help `tm_shape()` and `tm_polygons` to see how you can set optional parameters (map, break, title) and try on your own before you look at my code.
+
+```{r }
+tm_shape(philly_sf) +
+  tm_polygons("HOMIC_R", style="quantile", title="Philadelphia \nhomicide rate \nper 100,000")
+```
+
+The "standard" for posting packages to CRAN is that they should include a vignette - which describes a bit about using the package.  Take a look at https://cran.r-project.org/web/packages/tmap/vignettes/tmap-nutshell.html . It can give you an idea of some additional capabilities.
+
+##### **(a)** Make a plot as above, but for *median household income* instead of *homicide rate*.
+
+```{r}
+tm_shape(philly_sf) +
+  tm_polygons("mdHHnc_", style="quantile", title="Median Household Income")
+```
+
+
+##### **(b)** Now plot both chloropleths side by side.
+
+```{r}
+spplot(philly,"mdHHnc_")
+```
+
+```{r eval=FALSE}
+tm_shape(philly_sf) +
+  tm_polygons(c("HOMIC_R","mdHHnc_"), style="quantile")
+```
+
+Notice the challenge of trying to understand the relationship between these two variables, even when plotted side by side.
+
+In the vignette, it points out that there are other `marks` that one can use (besides the polygons).  Here is a bubble representation of the income:
+
+```{r eval=FALSE}
+tm_shape(philly_sf) +
+  tm_bubbles("mdHHnc_",perceptual=TRUE)
+```
+
+##### **(c)** Make a plot of *median household income* (using bubbles) and *homicide rate* (as polygons) all on the same plot. (Hint: you may need to take advantage of transparency).  Try on your own before looking at my code.
+
+```{r}
+tm_shape(philly_sf) +
+  tm_polygons("HOMIC_R",style="quantile")+tm_bubbles("mdHHnc_",perceptual=TRUE)
+```
+
+```{r eval=FALSE}
+tm_shape(philly_sf) +
+  tm_bubbles("mdHHnc_",perceptual=TRUE)+
+  tm_polygons("HOMIC_R", style="quantile",alpha=.4)
+```
+
+##### **(a)** What is the abstract name of the technique that is being used here.  
+
+- **A kind of technique in cartography for plottin Spatial Data as Shape**
+
+____
+There is a second vignette for tmap (https://cran.r-project.org/web/packages/tmap/vignettes/tmap-modes.html)
+which describes an alternative drawing mode.  Above, we have been using a representation suitable for static maps.   But tmap can also access leaflet tools to draw html widget based maps that allow for a bit more iteractivity.
+
+We can easily switch from "plot" mode into "view" mode and call the last plot, like so:
+
+```{r eval=FALSE}
+tmap_mode("view")
+tmap_last()
+```
+
+Cool huh?
+
+
+The `tmap` library also includes functions for simple spatial operations, geocoding and reverse geocoding using OSM. For more check `vignette("tmap-nutshell") `. 
+
+```{r}
+a=tmaptools::geocode_OSM("Rocky statue, Philadelphia, PA",as.sf=T)
+tm_shape(philly_sf) +
+  tm_polygons("HOMIC_R", style="quantile")+
+  tm_shape(a) + tm_text("query",size=1)
+```
+
+
+___________
+
+## 3. Web mapping with `leaflet`
+
+Lastly, `leaflet`[^7] makes use of the widely known ['Leaflet' JavaScript library](http://leafletjs.com), "the leading open-source JavaScript library for mobile-friendly interactive maps". We have already seen a simple use of leaflet in the `tmap` example. 
+
+The good news is that the `leaflet` library gives us loads of options to customize the web look and feel of the map. 
+
+The bad news is that the `leaflet` library gives us loads of options to customize the web look and feel of the map.
+
+You don't have to, but it makes the code more accessible if you use [the pipe operator `%>%`](https://github.com/tidyverse/magrittr) to chain the elements together when building up a map with `leaflet`. 
+
+Let's build up the map step by step.
+
+-----
+
+We have spoken of coordinate reference frames before.  Leaflet requires the spatial data to have preassign reference and likes the WGS84 data.  So as first step, I will transform our cordinates into that crs.
+
+```{r}
+ph_WGS = philly_sf %>% st_transform(4326)
+```
+
+We can visualize,
+
+```{r }
+# first try... ops what happened here
+leaflet(ph_WGS) %>%
+  addPolygons()
+```
+
+but let's tune what we want for the polygons:
+
+Map the homicide rate. For this we provide several parameters to the `addPolygons()` function that:
+
+    - remove stroke (polygon borders) 
+    - set a fillColor for each polygon based on `HOMIC_R` and make it look nice by adjusting fillOpacity and smoothFactor (how much to simplify the polyline on each zoom level). The fill color is generated using the `colorQuantile()` function, which takes the color scheme and the desired number of classes. `colorQuantile()` then returns a function that we supply to `addPolygons()` with the name of the value we want to map to constuct the color scheme. 
+    - add a popup with the `HOMIC_R` values. We will create as a vector of strings, that we then supply to `addPolygons()`.
+
+```{r }
+
+pal_fun <- colorQuantile("YlOrRd", NULL, n = 5) # helper function to allow coloring by variable value
+p_popup <- paste0("<strong>Homicide Rate: </strong>", ph_WGS$HOMIC_R)
+
+leaflet(ph_WGS) %>%
+  addPolygons(
+    stroke = FALSE, # remove polygon borders
+    fillColor = ~pal_fun(HOMIC_R), # set fill color with function from above and value
+    fillOpacity = 0.8, smoothFactor = 0.5, # make it nicer
+    popup = p_popup)  # add popup
+```
+
+Add the default basemap, which is OSM, with `addTiles()`. This you can do!
+
+```{r }
+leaflet(ph_WGS) %>%
+  addPolygons(
+    stroke = FALSE, 
+    fillColor = ~pal_fun(HOMIC_R),
+    fillOpacity = 0.8, smoothFactor = 0.5,
+    popup = p_popup) %>%
+  addTiles()
+```
+
+Finally, I have added for you a control to switch to another basemap and turn the philly polygon off and on. Take a look at the changes in the code below.
+
+```{r }
+leaflet(ph_WGS) %>%
+  addPolygons(
+    stroke = FALSE, 
+    fillColor = ~pal_fun(HOMIC_R),
+    fillOpacity = 0.8, smoothFactor = 0.5,
+    popup = p_popup,
+    group = "philly") %>%
+  addTiles(group = "OSM") %>%
+  addProviderTiles("CartoDB.DarkMatter", group = "Carto") %>%
+  addProviderTiles("Esri.WorldImagery", group = "Sat") %>%
+  addLayersControl(baseGroups = c("OSM", "Carto","Sat"), 
+                   overlayGroups = c("philly"))  
+```
+
+
+So Leaflet ultimately has more capability, but a bit more work to get there.
+
+
+
+
+
+

@@ -1,0 +1,237 @@
+---
+title: "ggplot2 with the cereals dataset"
+author: "Joe Skufca"
+date: "October 2019"
+output: 
+  html_notebook:
+    toc: true
+    toc_depth: 3
+    theme: spacelab
+    highlight: tango
+    toc_float: true
+    collapsed: false
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+My intention here is not to provide a tutorial on ggplot2.  Those already exist.  What I did want to show you is how I (conceptually) might have manipulated the dataset we were using for the cereals homework assignments to make a few plots.
+
+# Load packages
+
+The `tidyverse` should be sufficient.
+
+```{r}
+library(tidyverse)
+
+```
+
+# Get the data
+
+```{r}
+df1=read_csv('cereals.csv') # let function guess the column types
+```
+
+
+
+### Why ggplot2?
+
+`ggplot2` is a bit more complicated for simple plotting, but for more general analysis of a dataset, ggplot2 provides a robust set of static visualizations.  *Additionally*, it is built on a conceptual framework, **The Grammar of Graphics**, that matches closely with the theoretical underpinnings of data visualization that we are considering in this course.
+
+
+> Note: In this session, we won't be going after "graphic excellence."  Rather, we are focused on connect the theoretical framework of *Visualization Analysis and Design* with the visualization implementation using ggplot2 and related packages.
+
+
+
+# A first graph
+
+To make any graph, we need data (our loaded dataframe).  The *what* component of the abstraction.  
+
+For the task abstraction (the *why*) let's leave that loose, and simply suppose that we want to compare (what we think) are key nutritional variables and see if there is a relationship.
+
+### Are sugar and calories related?
+
+`Sugars` and `Calories` are both quantitative variables in our dataset, and one way to look at the relationship is via a scatterplot.
+
+```{r}
+df1 %>% ggplot(aes(x=Sugars,y=Calories))+
+  geom_point()
+```
+
+"aes":  aes - aesthetics - assigns a variable to a particular channel.  We are telling the graphics command to use horizontal position (x) to encode the `Sugars` value and vertical position (y) to encode `Calories`.
+
+"geom_point()": tells the system what type of *mark* to make on the page. (In this case, a point.)
+
+##### **(1)** Edit the code so that it (instead) plots Sugars along the horizontal, but plots the `Carbohydrates` on the vertical.
+
+
+```{r}
+# Edit me
+df1 %>% ggplot(aes(x=Sugars,y=Calories))+
+  geom_point()
+```
+
+
+### The data
+
+Let's take a quick look at our data:
+
+```{r}
+head(df1)
+```
+
+### Let's use more aesthetics.
+
+In Munzner's terminology, we there are a number of ways to encode a variable (called channels).  In ggplot2, the `aes` is where we declare the particular association of channel and variable that we want to use.
+
+We will continue with the scatter plot (geom_point()), which, according the the help page, understands the following aesthetics:
+
+
+* x
+* y
+* alpha
+* colour
+* fill
+* group
+* shape
+* size
+* stroke
+
+Let's return to Sugars and Calories to play a bit more with some of these.
+
+
+```{r}
+df1 %>% ggplot(aes(x=Sugars,y=Calories))+
+  geom_point(aes(colour=Sugars,size=Calories,fill=Calories),
+             shape="circle filled",stroke=3)
+```
+
+
+
+
+#  Manipulation of that plot by adding layers
+
+In ggplot2, a created plot is an object, and can be stored as a variable.
+
+```{r}
+p= df1 %>% ggplot(aes(x=Sugars,y=Calories))+
+  geom_point()
+```
+
+
+We can then add *layers* to that plot.
+
+
+
+#### Adding a smooth curve (based on a statistical model)
+
+```{r}
+p=p+geom_smooth()
+p
+```
+####  Manipulation of that plot by adding a theme
+
+Adding a theme manipulates broad characteristics
+
+```{r}
+p=p+theme_bw()
+p
+```
+
+#### Multiple layers can be added all at once
+
+Here I also added a jitter effect
+
+```{r}
+p=ggplot(df1,aes(x=Sugars,y=Calories))+
+  geom_point()+theme_bw()+geom_jitter(width=.3,height=.3)
+p
+```
+
+#### Using transparency to deal with overplotting
+
+An alternative way to deal with overplotting it to use transparency - the alpha channel
+
+```{r}
+p=df1 %>% ggplot(aes(x=Sugars,y=Calories))+
+  geom_point(alpha=.2,size=3)+theme_bw()
+p
+```
+
+
+
+# aes - aesthetics - assigns a variable to a particular channel
+
+Assign the color channel to "Shelf".
+
+```{r}
+
+```
+Note that "Shelf" is a numerica variable, so the colorscale is continuous
+
+# aes - aesthetics - assigns a variable to a particular channel
+
+Lets treat Shelf as categorical
+
+```{r}
+p=df1 %>% mutate(Shelf=factor(Shelf)) %>% ggplot(aes(x=Sugars,y=Calories,color=Shelf))+
+  geom_point()+theme_bw()+geom_jitter(width=.3,height=.3)
+p
+```
+
+
+# geom - geometry - selects a mark, but (sometimes) may also identify an idiom
+
+
+Manufacturer
+
+```{r}
+p=df1 %>% mutate(Shelf=factor(Shelf)) %>% ggplot(aes(x=Sugars,y=Calories,color=Shelf))+
+  theme_bw()+
+  geom_text(aes(label = Manufacturer), position=position_jitter(width=.2,height=.2))
+p
+```
+
+# Barcharts - a different geometry
+\small
+
+```{r}
+p=df1 %>% ggplot(aes(x=Shelf))+
+  theme_bw()+
+  geom_bar()
+p
+```
+
+# Stacked Barcharts 
+
+Use the "fill" channel for the variable "Manufacturer."
+
+```{r}
+
+```
+
+# The scatterplot matrix - because I asked you to
+\small
+Package GGally adds this functionality
+
+```{r}
+library(GGally)
+df1 %>% select(Calories,Protein,Fiber,Carbohydrates) %>% ggpairs()
+```
+
+## A second data set
+
+Let's play with MTCARS
+
+```{r}
+df2=mtcars
+knitr::kable(df2)
+```
+
+
+```{r}
+library(DT)
+datatable(df2)
+```
+
+

@@ -1,0 +1,139 @@
+---
+title: "Notebook support: IA640 Dashboard lab"
+author: "Joe Skufca"
+date: "23 November, 2019"
+output: 
+  html_notebook:
+    toc: true
+    toc_depth: 3
+    theme: spacelab
+    highlight: tango
+    toc_float: true
+    collapsed: false
+---
+
+This notebook provides *support* to the IA640 lab on building dashboards.  I will use this notebook to build the coded driven *elements* of the dashboard, and then cut and paste to insert to file that builds the dashboard.
+
+### Packages
+
+I am not building the dashboard here, so I simply am loading the standard tools I use for analysis.
+
+```{r collapse=TRUE}
+library(knitr) # to create nice documents in R
+library(tidyverse) # loads ggplot2, dplyr,tidyr,readr,purr,tibble
+library(forcats) # working with categorical variables
+```
+
+As we will be working with dates, I also load the `lubridate` package (to make it easy to work with date-time information).
+
+```{r}
+library(lubridate)
+```
+
+
+We will need a couple more, but I will hold off on loading so that I can show exactly where they come into play.
+
+### Load some data
+
+This data comes from the OpenDataPhilly website, https://www.opendataphilly.org/ .  These particular data are related to complaints filed against the police.
+
+> You should make sure you have downloaded the files from moodle and put them in your working directory.
+
+The three files give documentation about the complaints, the demographics of the complainant, and demographic information about the police involved (along with and disciplinary action taken).
+
+```{r message = F}
+df1=read_csv("ppd_complaints.csv")
+df2=read_csv("ppd_complainant_demographics.csv")
+df3=read_csv("ppd_complaint_disciplines.csv")
+```
+
+### Some Dashboard components
+
+Let's build a few things that we can include in the dashboard.
+
+
+##### Monthly counts of complaints.
+
+Perhaps we might be interested a monthly count of complaints.   We can use the `floor_data()` function from the lubridate package to help aggregate that data.
+
+Note that I have added a bit beyond the default ggplot call to get nice labels on the x-axis.
+
+```{r}
+dfA=df1 %>% group_by(month=floor_date(date_received, "month")) %>%  summarise(reports=n()) 
+
+dfA %>% filter(month >= "2019-01-01") %>%
+ ggplot(aes(x=month,y=reports)) + geom_col() +
+  scale_x_date(date_labels = "%b",date_breaks = "1 month") +
+  ggtitle("Complaints filed by month (year to date)")+
+  theme_minimal()
+```
+
+##### Disciplinary actions taken
+
+Note that in `df3` , if the investigation found no wrongdoing ("No Sustainted Findings") then no disciplinary action was taken ("Not Applicable").  But of those where disciplinary action was taken, what was the outcome.  
+
+
+```{r}
+dfB =df3 %>% filter(disciplinary_findings != "Not Applicable")
+
+dfB %>% 
+  ggplot(aes(x=disciplinary_findings)) + 
+  geom_bar() 
+```
+
+Suppose we want to break this appart by year of the complaint.  Then we have to do a little work, because dates are available only in the `df1` dataframe.  So we will have to join dataframes, and repeat the above steps, but adding faceting.
+
+```{r}
+left_join(df3,df1,by="complaint_id") %>% 
+  filter(disciplinary_findings != "Not Applicable") %>%
+  ggplot(aes(x=disciplinary_findings)) + 
+  geom_bar(aes(fill=disciplinary_findings)) +
+  facet_wrap(~year(date_received),ncol = 5)+
+  theme_minimal()+
+  theme(axis.text.x=element_blank()) # get rid of the text labels on the x axis
+
+  
+```
+
+##### Complaints filed by district
+
+Lets just get a table of data, rather than a plot, for the current month.
+
+
+```{r}
+df1 %>% 
+  filter(date_received>"2019-09-01") %>%
+  group_by(district_occurrence) %>%
+  summarise(complaints=n()) %>% arrange(complaints)
+```
+
+```{r}
+df1 %>% 
+  filter(date_received>"2019-09-01") %>%
+  count(district_occurrence,sort=TRUE) 
+```
+
+##### Perhaps we are concerned about the demographics of the accused officers
+
+Let's construct a two-way table of police officer's involved in these incidents.
+
+We will take advantage of the `tabyl` command from the `janitor` package and pretty things up with `kable`.
+
+```{r}
+library(janitor)
+df3 %>% tabyl(po_race,po_sex) %>%  kable()
+```
+
+##### Demographics on complainants
+
+```{r}
+df2 %>% tabyl(complainant_race,complainant_sex) %>%  kable()
+```
+
+
+
+
+
+
+
+

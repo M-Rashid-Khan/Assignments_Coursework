@@ -1,0 +1,118 @@
+---
+title: "Demo on Dept budget number"
+author: "Joe Skufca"
+date:  "22 SEP 2020"
+output: html_notebook
+---
+
+## Prepare Workspace
+
+Load the packages we intend use.  I always load the tidyverse, along with whatever else I want.
+
+
+```{r}
+library(extrafont)
+library(ggthemes)
+library(tidyverse)
+library(janitor)
+library(readxl)
+library(scales)
+```
+
+
+## Import data
+
+I want to bring in the data from the dept-sales performance Excel.
+
+```{r}
+a2_DeptYearlyPerf <- read_excel("a2-DeptYearlyPerf.xls")
+```
+
+## Tidy the data
+
+Transform first into long data.  I will use pivot_long from tidyr.
+
+```{r}
+df2 = a2_DeptYearlyPerf %>% 
+  pivot_longer(c(2:9),names_to = c("qtr","budget_or_actual"),
+               names_sep = " ",values_to = "amount") %>% clean_names()
+```
+
+
+
+## Transforms
+
+I may need to work with the difference between budget and actual.
+
+
+```{r}
+df3= df2 %>% pivot_wider(names_from = budget_or_actual,
+                         values_from = amount) %>% clean_names()
+```
+
+Lets compute a budget deviation column:
+
+```{r}
+df3 =df3 %>% mutate(budget_diff=budget-actual)
+```
+
+
+## Build an initial visualization
+
+
+```{r}
+df2 %>% ggplot(aes(x=dept,y=amount)) +
+  geom_bar(aes(fill=budget_or_actual), stat = "Identity",position = "dodge")
+
+```
+
+
+Using Faceting
+
+
+```{r}
+df2 %>% ggplot(aes(x=qtr,y=amount)) +
+  geom_bar(aes(fill=budget_or_actual  ), stat = "Identity",position = "dodge2") +
+  facet_wrap(~dept,ncol=4)
+```
+
+But maybe I want to emphasize something else, like the budget difference.
+
+
+```{r fig.asp=.4}
+df3 %>% mutate(dept=as_factor(dept) %>% fct_reorder(-actual)) %>%
+               ggplot(aes(x=qtr,y=actual/1000)) +
+  geom_crossbar(aes(ymin=budget/1000,ymax=actual/1000,fill=(actual>budget)  ),color=NA) +
+  geom_crossbar(aes(ymin=actual/1000,ymax=actual/1000  ),size=.3) +
+  facet_wrap(~dept,ncol=4)+theme_minimal(base_size = 10,base_family = "Gill Sans MT")+
+  scale_fill_manual(name="Comparison to \n Budget",
+                          labels=c("Under \nBudget", "Over \nBudget"),
+                    values = c("#5ab4ac","#d8b365"))+
+  #theme(text = element_text(size = 10,family="GillSans")) +
+  xlab("Quarter")+ylab("Expenditures ($k)")+
+  ggtitle("Expenditures by department and quarter, with deviation from budget")+
+  scale_y_continuous(breaks = breaks_width(200),limits = c(0,1000))
+```
+
+Try 2:
+
+```{r fig.asp=.4}
+df3 %>% mutate(dept=as_factor(dept) %>% fct_reorder(-actual)) %>%
+               ggplot(aes(x=qtr,y=actual/1000)) +
+  geom_crossbar(aes(ymin=budget/1000,ymax=actual/1000,fill=(actual>budget)  ),color=NA) +
+  geom_crossbar(aes(ymin=actual/1000,ymax=actual/1000  ),size=.3) +
+  facet_wrap(~dept,ncol=4)+
+  theme_tufte(base_size = 10,base_family = "Gill Sans MT")+
+  scale_fill_manual(name="",
+                          labels=c("Under \nBudget", "Over \nBudget"),
+                    values = c("#5ab4ac","#d8b365"))+
+  xlab("Quarter")+ylab("Expenditures ($k)")+
+  ggtitle("Expenditures by department and quarter, with deviation from budget")+
+  scale_y_continuous(breaks = breaks_width(200),limits = c(0,1000))
+```
+
+
+## Reflection
+
+Here's what I think ....
+
