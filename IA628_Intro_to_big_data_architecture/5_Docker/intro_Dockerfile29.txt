@@ -1,0 +1,12 @@
+#set of instructions on how to build an image
+#image to build off (fork it)
+# -y because NOT interactive
+FROM ubuntu
+
+#Run a command on the shell
+RUN apt update -y
+RUN apt install python3-pip -y
+RUN pip install flask
+RUN pip install flask_session
+
+#Volumes handled separetly. Containers only

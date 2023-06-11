@@ -1,0 +1,47 @@
+Docker (3/29/2023)
+
+#list containers
+docker ps (-a)
+
+#image to container
+docker run -it --name pybuntu ubuntu 
+- exit to leave
+
+# inside (Recipe)
+apt update
+apt install python3-pip
+pip install flask
+pip install flask_session
+
+#Turn container into image (to transport)
+docker commit pybuntu pybuntuimg
+
+#list downloaded images
+docker images
+
+#Files
+- scripts - usually mounted
+- data - mounted to a volume
+- environment - dependencies to install (bake in)
+
+#mounts
+- Volumes mapped outside of the container duplicated inside of the container
+- Share data between in and outside
+- make sure to be in powershell not windows cmd
+- when to bake: Things arent expected to change
+- v host_location:container_location
+docker run -it -v "${PWD}/myfiles:/myfiles" pybuntuimg
+
+#port fowarding
+-p external port:internal port
+docker run -it -v "${PWD}/myfiles:/myfiles" -p 5000:5000 pybuntuimg
+
+#Run command at end of run command
+docker run -it -v "${PWD}/myfiles:/myfiles" -p 5001:5000 pybuntuimg python3 /myfiles/app.py
+
+# Docker File
+docker build . -t pybuntu2
+- . is the current location (e.g: ./location)
+
+# tag (not image tag)
+-t desired_imagename (applies to build off dockerfile)
