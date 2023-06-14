@@ -1,0 +1,209 @@
+---
+title: "Company Departments Budget"
+author: "Joe Skufca"
+date: "Jun 10,2018"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( cache = T,fig.height=3, fig.width=6)
+```
+
+
+
+This notebook addresses the second part of the assignment on Table and Graph Design.  As before, my intention is to provide some assisting explanation, but not necessarily a tutorial.  The key challenge for visualizing this data was ... 
+
+**it was not Tidy.**
+
+\small
+So, I will step you through my approach to tidying the data, show you a couple of graphs, and then allow you to pursue some artistic license in developing your own graph.
+
+### Recomendation on how to use this notebook
+
+* Try to do some of the code hacking yourself
+* Keep the `code blocks` close until you are convinced that you need them.
+* If stuck - work through the data-tidying elements of the notebook, and understand _why_ how the commands are helping you to get to tidy data.
+* After you have tidy data, work on your own visualizations.
+    + If stuck, look at the figure for inspiration of what you might want to do
+    + If still stuck, look at the code blocks to move forward.
+
+
+
+## Packages
+
+My first step is to load up a number of packages I will use in the analysis.  Packages like ggplot2 or dplyr seemed to get used over and over.
+
+There is a package called *tidyverse* which actually loads these crucial packages and many more.  You can learn more about the package by visiting
+
+https://blog.rstudio.org/2016/09/15/tidyverse-1-0-0/ 
+
+With a much more detailed online book describing how they fit together available at
+
+http://r4ds.had.co.nz/
+
+
+```{r}
+# load the package 
+library(tidyverse)
+```
+
+### Load the data
+
+
+I generally find that Excel .xls files can be tricky, so I initially opened the data in excel and then saved as a .csv format.  In general, .csv , being a plain text readable format is much more portable, so I often do that first step outside of R.  
+
+Having done so, I load the data in the standard way.
+
+```{r}
+af=read_csv("a2.csv")
+head(af)
+```
+
+### Loading from .xls format
+
+So ... suppose you didn't have access to excel and did not do the pre-processing.  
+
+There's a package for that:
+
+```{r}
+library(readxl)
+af_ex= read_excel("a2-DeptYearlyPerf.xls")
+head(af_ex)
+```
+
+Other than reading the numbsers as"double precision" instead of "integers", it gets you to the same place
+- data loaded, but not tidy.
+
+> I have generally found the excel reader functions to work pretty well, but a csv file always allows direct control.
+
+
+## Tidying the data 
+
+I will work from the `af` data frame.  
+
+
+
+#### One minor fix before we start:
+```{r}
+names(af)[1]="Dept"   # I didn't like the period in the variable name
+```
+
+Now - let's use some commands from the *tidyr* package (and a bit of *dplyr*) to help us.
+
+`I will track along the changes using multiple data frames, but I will show you a shorter version in the end.`
+
+#### Declaring Factor variable
+
+The reader defaults to reading character strings as string.  But much of R functionality requires that factor variables be understood as factors.
+
+```{r}
+af1=af %>% mutate(Dept=factor(Dept)) # declare a factor variable
+```
+
+#### Make the data frame "long"
+
+In terms of *tidy data*, we see the common error that the `column headers are values, not variable names`, in that `quarter` is encoded as part of name.  
+
+The trouble here is that "time" is not a variable in our data frame, and we need it to be.
+
+We will use the *tidyr* `gather` command: we take multiple columns and "gather" into key-value pairs
+
+
+```{r}
+af2=af1 %>% gather(key,val,2:9)
+head(af2)
+```
+
+
+#### Separating a column
+
+We now can easily see that the 'key' column holds two pieces of information, but it is easily separated.  [The tidy-error of _multiple variables in one column_.]
+
+```{r}
+af3=af2 %>% separate(key,into=c("qtr","type"),sep=" ")
+head(af3)
+```
+
+#### Factors again
+
+Finally, we declare the new variables to be factor variables.
+```{r}
+af4=af3 %>% mutate_at(2:3,factor)
+af4
+```
+
+### Still tidy, but wide
+
+Having properly extracted the time variable, we might still benefit by considering the 'budget' and 'actual' values to be in their own columns, appropriately named.  So we 'spread' the data to create a wide data frame.
+
+```{r}
+afwide =af4 %>% spread(key=type, value=val)
+head(afwide)
+```
+
+
+
+### Of course, if you knew what you wanted ...
+
+Once we know what we want, we could shorten any of this by using the `%>%` operator to perform chaining.
+
+Recognize that it is partly the _tidy data_ concept that allows this behavior, in that a tidy function should take tidy input and produce tidy output.
+
+
+```{r}
+afquick = af1 %>% gather(key,val,2:9) %>% separate(key,into=c("qtr","type"),sep=" ") %>%
+   mutate_at(2:3,factor) %>% spread(key=type, value=val)
+head(afquick)
+```
+
+## Let's make some ggplot2 plots
+
+With this data set, it is almost certain that you would want to observe what happens over _time_ , which was why we had to extract the quarter information.  As a variable, _qtr_ can now be encoded as aesthetic.
+
+### Using the long dataset
+
+If we want to encode _budget_ and _actual_ information differently, then we need to use the `type` variable in the long data frame.
+
+
+```{r}
+ggplot(af4, aes(x=qtr, y=val, fill = type))+
+  facet_wrap(~Dept,ncol=4) +geom_bar(position="dodge",stat = "identity")
+```
+
+### Line charts for considering trends 
+
+```{r}
+ggplot(af4, aes(x=qtr, y=val, color = type))+
+  facet_wrap(~Dept,ncol=4) +geom_line(aes(group=type))
+```
+
+### And of course - feel free to derive new variables
+
+Here, I use the wide data frame to allow me to compute the amount of overbudget spending.
+```{r}
+afwide %>% mutate(overage=Budget-Actual) %>%
+ggplot(aes(x=qtr, y=overage))+
+  geom_line(aes(group=Dept,color=Dept),size=2)
+```
+
+#### Some minor tweeks
+
+I want prettier scales (and I don't like the gray background)
+```{r}
+library(scales)
+library(ggthemes)
+afwide %>% mutate(overage=Budget-Actual) %>%
+ggplot(aes(x=qtr, y=overage))+
+  geom_line(aes(group=Dept,color=Dept),size=1)+
+  scale_y_continuous(labels=dollar)+theme_tufte()
+```
+
+
+#### A stacked bar
+
+```{r}
+af3 %>% ggplot(aes(type,y=val,fill=Dept))+geom_bar(stat = "identity")+
+  facet_wrap(~qtr,ncol=1)+coord_flip()
+
+```
+

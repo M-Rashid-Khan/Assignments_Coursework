@@ -1,0 +1,162 @@
+---
+title: "Sales Rep Graphs"
+author: "Joe Skufca"
+date: "Jun 14,2018"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( cache = T, fig.width=8)
+```
+
+Joel,
+
+You requested that I help you grapple with how produce something like you were producing in Tableau.
+
+
+```{r}
+# load the package 
+library(tidyverse)
+library(readxl)
+```
+
+### Load the data
+
+
+I generally find that Excel .xls files can be tricky, so I initially opened the data in excel and then saved as a .csv format.  In general, .csv , being a plain text readable format is much more portable, so I often do that first step outside of R.  
+
+Having done so, I load the data in the standard way.
+
+### Loading from .xls format
+
+```{r}
+af=read_xls("a2-SalesRepPerf.xls")
+head(af)
+```
+
+
+
+## Tidying the data 
+
+I will work from the `af` data frame.  
+
+
+
+#### One minor fix before we start:
+```{r}
+names(af)[6]="Actual"   # Spaces in a variable name is bad syntax
+names(af)[1]="Sales_rep"
+```
+
+
+#### Make the data frame "long"
+
+As you are using `Actual` and `Quota`, they are a categorical variable.  
+
+The original table is tidy, but you need it in the "long" format.
+
+Additionally (although it won't be needed here) I will `select` only the relevant columns 
+
+
+```{r}
+afv=af %>% gather(key,val,c(2,6)) %>% select(Sales_rep,key,val)
+afv
+```
+
+Here is the same thing, using the pivot command:
+
+```{r}
+afv2 = af %>% 
+  pivot_longer(cols = c(Quota,Actual),names_to = "key",values_to = "val") #%>%
+  #select(Sales_rep,key,val) 
+afv2
+```
+
+
+
+### Using the long dataset
+
+If we want to encode _Quota_ and _Actual_ information differently, then we need to use the `key` variable in the long data frame.
+
+
+```{r}
+ggplot(afv, aes(x=Sales_rep, y=val, fill = key))+
+  geom_bar(position="dodge",stat = "identity")
+```
+
+### Or you could encode by facets 
+
+```{r}
+ggplot(afv, aes(x=key, y=val))+facet_wrap(~Sales_rep,ncol=13)+
+  geom_col()+theme_bw()
+```
+
+### At this point, you can tweak the labels
+
+
+#### Some minor tweeks
+
+I want prettier scales (and I don't like the gray background)
+
+```{r}
+library(scales)
+library(ggthemes)
+ggplot(afv, aes(x=key, y=val))+facet_wrap(~Sales_rep,ncol=13)+
+  geom_col()+
+  scale_y_continuous(labels=dollar)+theme_tufte()
+```
+
+
+#### Perhaps a bit more work on the labels
+
+Note - text on horizontal is easier to read.
+
+```{r fig.height=8}
+library(scales)
+library(ggthemes)
+ggplot(afv, aes(x=key, y=val))+
+  facet_wrap(~Sales_rep,ncol=1,strip.position = "right",)+
+  geom_col()+
+  scale_y_continuous(labels=dollar)+theme_minimal() +
+  coord_flip()+
+  theme(strip.text.y = element_text(angle = 0))
+```
+
+## The Departmental data
+
+## Load the data
+
+```{r}
+df2=read_excel("a2-DeptYearlyPerf.xls")
+names(df2)[1]="Dept"
+```
+
+```{r}
+df3=df2 %>% pivot_longer(c(2:9),
+                         names_to = c("Qtr","Budget.or.Actual"),names_sep = " ",values_to = "value")
+```
+
+```{r}
+df4= df3 %>% pivot_wider(names_from = Budget.or.Actual,values_from = value)
+```
+
+```{r}
+df4 = df4 %>% mutate(Budget.difference=Budget-Actual)
+```
+
+```{r}
+df3 %>% ggplot(aes(x=Dept,y=value)) + 
+  geom_bar(aes(weight=Qtr,fill=Budget.or.Actual),stat = "Identity",position = "dodge")
+```
+
+```{r}
+df3 %>% ggplot(aes(x=Dept,y=value)) + 
+  geom_bar(aes(fill=Budget.or.Actual),stat = "Identity",position = "dodge")+
+  facet_wrap(~Qtr)
+```
+
+```{r}
+df3 %>% ggplot(aes(x=Qtr,y=value)) + 
+  geom_bar(aes(fill=Budget.or.Actual),stat = "Identity",position = "dodge")+
+  facet_wrap(~Dept)
+```

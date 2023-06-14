@@ -1,0 +1,107 @@
+version: '3.6'
+services:
+    Elasticsearch:
+        image: elasticsearch:7.16.2
+        container_name: elasticsearch
+        restart: always
+        volumes:
+            - elastic_data:/usr/share/elasticsearch/data/
+        environment:
+            # ES_JAVA_OPTS: "-Xmx750m -Xmx750m"
+            discovery.type: single-node
+        ports:
+            - '9200:9200'
+            - '9300:9300'
+        networks:
+            - elastic
+
+    Logstash:
+        image: logstash:7.16.2
+        container_name: logstash
+        restart: always
+        volumes:
+            - ./logstash/:/logstash_dir
+            - ./data/:/home
+        command: logstash -f /logstash_dir/logstash.conf
+        depends_on:
+            - Elasticsearch
+        ports:
+            - '9600:9600'
+        # environment:
+        #     LS_JAVA_OPTS: "-Xmx750m -Xmx750m"
+        networks:
+            - elastic
+
+    Grafana:
+        image: grafana/grafana
+        container_name: grafana
+        restart: always
+        ports:
+            - '3000:3000'
+        volumes:
+            - ./grafana-data:/var/lib/grafana
+        environment:
+            - ELASTICSEARCH_URL=http://elasticsearch:9200
+        depends_on:
+            - Elasticsearch
+        networks:
+            - elastic
+
+volumes:
+    elastic_data: {}
+
+networks:
+    elastic:
+
+
+
+# Please explicitly set `xpack.monitoring.enabled: true` in logstash.yml
+
+
+# version: '3.1'
+#
+# services:
+#   elasticsearch:
+#     image: docker.elastic.co/elasticsearch/elasticsearch:8.0.0
+#     container_name: elasticsearch
+#     restart: always
+#     ports:
+#         - "9200:9200"
+#         - "9300:9300"
+#     environment:
+#         ELASTIC_PASSWORD: 12345
+#     networks:
+#         - elastic
+#   logstash:
+#     image: logstash:8.0.0
+#     # image: custom_logstash
+#     ports:
+#         - "5000:5000"
+#     build: ./logstash_build
+#     container_name: logstash
+#     restart: always
+#     # command: /usr/share/logstash/bin/logstash -f /var/config-dir/logstash.conf
+#     # command: ./bin/elasticsearch-certutil http
+#     command: bin/logstash -f logstash-simple.conf
+#     links:
+#         - "elasticsearch"
+#     volumes:
+#         # - "./logstash_config:/var/config-dir"
+#         - type: bind
+#           source: ./logstash_config/logstash.yml
+#           target: /usr/share/logstash/config/logstash.yml
+#           read_only: true
+#         - type: bind
+#           source: ./logstash_config/logstash-simple.conf
+#           target: /usr/share/logstash/config/logstash-simple.conf
+#           read_only: true
+#         # - "./logstash_config/logstash.conf:/usr/share/logstash/config/logstash.conf"
+#         # - "./logstash_config/logstash-sample.conf:/usr/share/logstash/config/logstash-sample.conf"
+#     networks:
+#         - elastic
+#     depends_on:
+#         - elasticsearch
+#
+#
+# networks:
+#     elastic:
